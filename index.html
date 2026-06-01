@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Unit Distance Graph</title>
+  <style>
+    body {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column; 
+      align-items: center;
+    }
+    #controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    #svg {
+      display: block;
+      border: solid 1px #ddd;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="controls">
+    <label for="deltaSlider">δ</label>
+    <input type="range" id="deltaSlider" min="0" max="2" value="1" step="0.01" list="markers">
+    <datalist id="markers">
+      <option value="0"></option>
+      <option value="1"></option>
+      <option value="2"></option>
+    </datalist>
+    <span id="sliderValue">1.00</span>
+  </div>
+
+  <svg id="svg"></svg>
+
+  <script>
+    const WIDTH = 3;
+    const HEIGHT = 2.2;
+    const SCALE = 200;
+    const POINT_RADIUS = 0.04;
+    const COLORS = [
+      'red',
+      'green',
+      'blue',
+      'orange',
+      'brown',
+      'purple'
+    ];
+
+    const SIXTH = 1 / 6;
+
+    const svg = document.getElementById('svg');
+    svg.setAttribute('width', WIDTH * SCALE);
+    svg.setAttribute('height', HEIGHT * SCALE);
+    svg.setAttribute('viewBox', `0 0 ${WIDTH} ${HEIGHT}`);
+    const controlsEl = document.getElementById('controls');
+    controlsEl.style.width = `${WIDTH * SCALE}px`;
+
+    const createSvgEl = (name) => {
+      return document.createElementNS('http://www.w3.org/2000/svg', name);
+    };
+
+    const tpx = (x) => {
+      return 0.5 * WIDTH + x;
+    };
+
+    const tpy = (y) => {
+      return 0.5 * HEIGHT - y;
+    };
+
+    const tp = (p) => {
+      return { x: px(x), y: px(y) };
+    };
+
+    const point = (p, colorIndex) => {
+      const el = createSvgEl('circle');
+      el.setAttribute('cx', tpx(p.x));
+      el.setAttribute('cy', tpy(p.y));
+      el.setAttribute('r', POINT_RADIUS);
+      el.setAttribute('stroke', '#666');
+      el.setAttribute('stroke-width', 0.005);
+      el.setAttribute('fill', COLORS[colorIndex] || '#000');
+      el.setAttribute('fill-opacity', 0.1);
+      svg.appendChild(el);
+    };
+
+    const line = (p0, p1, colorIndex) => {
+      const el = createSvgEl('line');
+      el.setAttribute('x1', tpx(p0.x));
+      el.setAttribute('y1', tpy(p0.y));
+      el.setAttribute('x2', tpx(p1.x));
+      el.setAttribute('y2', tpy(p1.y));
+      el.setAttribute('stroke', COLORS[colorIndex] || '#000');
+      el.setAttribute('stroke-opacity', 0.5);
+      el.setAttribute('stroke-width', 0.02);
+      el.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(el);
+      point(p0, colorIndex);
+      point(p1, colorIndex);
+    };
+
+    const lineP1 = (p0, length, angle) => {
+      return {
+        x: p0.x + length * Math.cos(angle),
+        y: p0.y + length * Math.sin(angle),
+      }
+    };
+
+    const triangle = (triPoints, colorIndex) => {
+      const { p0, p1, p2 } = triPoints;
+      line(p0, p1, colorIndex);
+      line(p1, p2, colorIndex);
+      line(p2, p0, colorIndex);
+    };
+
+    const trianglePoints = (p0, angle) => {
+      const p1 = lineP1(p0, 1, angle);
+      const p2 = lineP1(p1, 1, angle + 4 * SIXTH * Math.PI);
+      return { p0, p1, p2 };
+    }
+
+    const house = (angleDelta) => {
+      let p;
+      let angle = 0;
+      let triPoints = {
+        p1: { x: -0.75, y: -0.925 }
+      };
+  
+      for (let i = 0; i < 6; i++) {
+        p = triPoints.p1;
+        triPoints = trianglePoints(p, angle);
+        triangle(triPoints, i);
+        const aSign = (i % 2 === 0) ? -1 : 1;
+        angle += 2 * SIXTH * Math.PI + aSign * angleDelta;
+      }
+    };
+
+    const slider = document.getElementById('deltaSlider');
+    const sliderValueDisplay = document.getElementById('sliderValue');
+
+    const updateGraph = () => {
+      svg.replaceChildren();
+      const delta = parseFloat(slider.value);
+      sliderValueDisplay.textContent = delta.toFixed(2);
+      const angleDelta = delta * SIXTH * Math.PI;
+      house(angleDelta);
+    };
+
+    slider.addEventListener('input', updateGraph);
+
+    updateGraph();
+  </script>
+
+</body>
+</html>
