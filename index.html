@@ -7,7 +7,7 @@
     body {
       margin-top: 10px;
       display: flex;
-      flex-direction: column; 
+      flex-direction: column;
       align-items: center;
     }
     #controls {
@@ -39,8 +39,8 @@
   <svg id="svg"></svg>
 
   <script>
-    const WIDTH = 3;
-    const HEIGHT = 2.2;
+    const WIDTH = 6;
+    const HEIGHT = 4;
     const SCALE = 200;
     const POINT_RADIUS = 0.04;
     const COLORS = [
@@ -51,8 +51,6 @@
       'brown',
       'purple'
     ];
-
-    const SIXTH = 1 / 6;
 
     const svg = document.getElementById('svg');
     svg.setAttribute('width', WIDTH * SCALE);
@@ -104,40 +102,107 @@
       point(p1, colorIndex);
     };
 
+    // Angles are normalized 0-1 (1 is one rotation)
     const lineP1 = (p0, length, angle) => {
       return {
-        x: p0.x + length * Math.cos(angle),
-        y: p0.y + length * Math.sin(angle),
+        x: p0.x + length * Math.cos(angle * 2 * Math.PI),
+        y: p0.y + length * Math.sin(angle * 2 * Math.PI),
       }
     };
 
-    const triangle = (triPoints, colorIndex) => {
-      const { p0, p1, p2 } = triPoints;
+    const dist = (p0, p1) => {
+      const dx = p1.x - p0.x;
+      const dy = p1.y - p0.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const trianglePointsArray = (p0, angle) => {
+      const p1 = lineP1(p0, 1, angle);
+      const p2 = lineP1(p1, 1, angle + 1 / 3);
+      return [ p0, p1, p2 ];
+    };
+
+    const drawTriangle = (triPoints, colorIndex) => {
+      const [ p0, p1, p2 ] = triPoints;
       line(p0, p1, colorIndex);
       line(p1, p2, colorIndex);
       line(p2, p0, colorIndex);
     };
 
-    const trianglePoints = (p0, angle) => {
-      const p1 = lineP1(p0, 1, angle);
-      const p2 = lineP1(p1, 1, angle + 4 * SIXTH * Math.PI);
-      return { p0, p1, p2 };
-    }
-
-    const house = (angleDelta) => {
-      let p;
-      let angle = 0;
-      let triPoints = {
-        p1: { x: -0.75, y: -0.925 }
-      };
-  
-      for (let i = 0; i < 6; i++) {
-        p = triPoints.p1;
-        triPoints = trianglePoints(p, angle);
-        triangle(triPoints, i);
-        const aSign = (i % 2 === 0) ? -1 : 1;
-        angle += 2 * SIXTH * Math.PI + aSign * angleDelta;
+    const drawTriangleNode = (options) => {
+      const { tn, parentTn, p, a, i } = options;
+      const parentVertex = tn.v;
+      const _p = p || parentTn._points[parentVertex];
+      const parentA = a || (parentTn ? parentTn._a : 0);
+      tn._a = parentA + (tn.a || 0);
+      tn._points = trianglePointsArray(_p, tn._a);
+      drawTriangle(tn._points, i);
+      for (const childTn of tn.children || []) {
+        drawTriangleNode({ tn: childTn, parentTn: tn, i });
       }
+    };
+
+    const getDistanceAngle = (angles) => {
+      const p0 = { x: 0, y: 0 };
+      let p = p0;
+      for (const a of angles) {
+        p = lineP1(p, 1, a);
+      }
+      return {
+        d: dist(p0, p),
+        a: Math.atan2(p.y, p.x) / (2 * Math.PI)
+      };
+    };
+
+    const drawShape = (options) => {
+      const { rootTriangleNode, d, a, count } = options;
+      let aa = a;
+      let p = { x: -1, y: -1.0 };
+      for (let i = 0; i < count; i++) {
+        drawTriangleNode({
+          tn: rootTriangleNode,
+          p: p,
+          a: i / count,
+          i: i
+        });
+        p = lineP1(p, d, aa)
+        aa += 1 / count;
+      }
+    };
+
+    // Draw the 9-18 shape
+    const drawShape1 = (delta) => {
+      const ad = 2 - delta;
+      const rootTriangleNode = {
+        children: [ { v: 1, a: (1 / 12) * ad } ]
+      };
+      const { d, a } = getDistanceAngle(
+        [ 0, (1 / 12) * ad ]
+      );
+      drawShape({ rootTriangleNode, d, a, count: 3 });
+    };
+
+    // Draw the 27-81 shape
+    const drawShape2 = () => {
+      const rootTriangleNode = { children: [
+        { v: 0, a: (2 / 24), children: [
+          { v: 1, a: -(1 / 24) }
+        ]},
+        { v: 0, a: (1 / 24), children: [
+          { v: 1, a: -(1 / 24) },
+          { v: 1, a: (1 / 24) }
+        ]},
+        { v: 1, a: (2 / 24), children: [
+          { v: 1, a: (6 / 24), children: [
+            // { v: 2, a: -(7 / 24) }
+          ]}
+        ]},
+        { v: 1, a: (1 / 24) },
+      ]};
+      const { d, a } = getDistanceAngle(
+        [ 0, 1 / 24, 2 / 24 ]
+      );
+      drawShape({ rootTriangleNode, d, a, count: 3 });
     };
 
     const slider = document.getElementById('deltaSlider');
@@ -147,8 +212,7 @@
       svg.replaceChildren();
       const delta = parseFloat(slider.value);
       sliderValueDisplay.textContent = delta.toFixed(2);
-      const angleDelta = delta * SIXTH * Math.PI;
-      house(angleDelta);
+      drawShape2(delta);
     };
 
     slider.addEventListener('input', updateGraph);
