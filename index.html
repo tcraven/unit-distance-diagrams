@@ -22,20 +22,37 @@
       border: solid 1px #ddd;
     }
   </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body>
-
+<body
+  x-data="{ sliderValue: 1, stats: { pointCount: 0, lineCount: 0 } }"
+  x-effect="stats = drawShape1(sliderValue)"
+>
   <div id="controls">
     <label for="deltaSlider">δ</label>
-    <input type="range" id="deltaSlider" min="0" max="2" value="1" step="0.01" list="markers">
+    <input
+      x-model="sliderValue"
+      type="range"
+      min="0"
+      max="2"
+      step="0.01"
+      list="markers"
+    >
     <datalist id="markers">
       <option value="0"></option>
       <option value="1"></option>
       <option value="2"></option>
     </datalist>
-    <span id="sliderValue">1.00</span>
+    <span x-text="parseFloat(sliderValue).toFixed(2)"></span>
+    <span>
+      <span>
+        Point count: <span x-text="stats.pointCount"></span>
+      </span>
+      <span>
+        Line count: <span x-text="stats.lineCount"></span>
+      </span>
+    </span>
   </div>
-  <span id="stats"></span>
 
   <svg id="svg"></svg>
 
@@ -186,6 +203,7 @@
         lineCount: 0,
         lines: {}
       };
+      svg.replaceChildren();
       let aa = a;
       let p = { x: -1, y: -1 };
       for (let i = 0; i < count; i++) {
@@ -203,20 +221,17 @@
         aa += 1 / count;
       }
       const { pointCount, lineCount } = stats;
-      return {
-        stats: { pointCount, lineCount }
-      };
+      return { pointCount, lineCount };
     };
 
     // Draw the 9-18 shape
     const drawShape1 = (delta) => {
       const ad = 2 - delta;
+      const A0 = (1 / 12) * ad;
       const rootTriangleNode = {
-        children: [ { v: 1, a: (1 / 12) * ad } ]
+        children: [ { v: 1, a: A0 } ]
       };
-      const { d, a } = getDistanceAngle(
-        [ 0, (1 / 12) * ad ]
-      );
+      const { d, a } = getDistanceAngle([ 0, A0 ]);
       return drawShape({ rootTriangleNode, d, a, count: 3 });
     };
 
@@ -237,9 +252,7 @@
         { v: 1, a: A0 },
         { v: 1, a: A1 },
       ]};
-      const { d, a } = getDistanceAngle(
-        [ 0, A0, A1 ]
-      );
+      const { d, a } = getDistanceAngle([ 0, A0, A1 ]);
       return drawShape({ rootTriangleNode, d, a, count: 3 });
     };
 
@@ -255,28 +268,9 @@
         { v: 1, a: A0 },
         { v: 2, a: A0 },
       ]};
-      const { d, a } = getDistanceAngle(
-        [ 0, A0, A0 ]
-      );
+      const { d, a } = getDistanceAngle([ 0, A0, A0 ]);
       return drawShape({ rootTriangleNode, d, a, count: 3 });
     };
-
-    const slider = document.getElementById('deltaSlider');
-    const sliderValueDisplay = document.getElementById('sliderValue');
-    const statsEl = document.getElementById('stats');
-
-    const updateGraph = () => {
-      svg.replaceChildren();
-      const delta = parseFloat(slider.value);
-      sliderValueDisplay.textContent = delta.toFixed(2);
-      const stats = drawShape2(delta);
-      statsEl.innerHTML = JSON.stringify(stats);
-    };
-
-    slider.addEventListener('input', updateGraph);
-
-    updateGraph();
   </script>
-
 </body>
 </html>
