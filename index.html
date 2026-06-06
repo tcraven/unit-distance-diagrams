@@ -155,10 +155,13 @@
     };
 
     const drawShape = (options) => {
-      const { rootTriangleNode, d, a, count } = options;
+      const { rootTriangleNode, d, a, count, stop } = options;
       let aa = a;
       let p = { x: -1, y: -1.0 };
       for (let i = 0; i < count; i++) {
+        if (i === stop) {
+          return;
+        }
         drawTriangleNode({
           tn: rootTriangleNode,
           p: p,
@@ -185,7 +188,6 @@
     // Draw the 27-81 shape
     const drawShape2 = (delta) => {
       const dd = delta - 1;
-      // const dd = 0.5;  // dd = 0.5 is interesting
       const A0 = (1 + dd) / 24;
       const A1 = (2 - dd) / 24;
       const rootTriangleNode = { children: [
@@ -202,6 +204,24 @@
       ]};
       const { d, a } = getDistanceAngle(
         [ 0, A0, A1 ]
+      );
+      drawShape({ rootTriangleNode, d, a, count: 3 });
+    };
+
+    // Draw the new 18-45 shape
+    const drawShape3 = (delta) => {
+      let dd = (delta - 1);
+      dd = (dd > 0) ? dd * 5 / 3 : dd;
+      const A0 = (1 + dd) / 16;
+      const rootTriangleNode = { children: [
+        { v: 0, a: A0, children: [
+          { v: 1, a: -A0 },
+        ]},
+        { v: 1, a: A0 },
+        { v: 2, a: A0 },
+      ]};
+      const { d, a } = getDistanceAngle(
+        [ 0, A0, A0 ]
       );
       drawShape({ rootTriangleNode, d, a, count: 3 });
     };
