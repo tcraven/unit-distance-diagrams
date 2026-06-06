@@ -183,21 +183,25 @@
     };
 
     // Draw the 27-81 shape
-    const drawShape2 = () => {
+    const drawShape2 = (delta) => {
+      const dd = delta - 1;
+      // const dd = 0.5;  // dd = 0.5 is interesting
+      const A0 = (1 + dd) / 24;
+      const A1 = (2 - dd) / 24;
       const rootTriangleNode = { children: [
-        { v: 0, a: (1 / 24), children: [
-          { v: 1, a: -(1 / 24) },
-          { v: 1, a: (1 / 24) }
+        { v: 0, a: A0, children: [
+          { v: 1, a: -A0 },
+          { v: 1, a: A0 }
         ]},
-        { v: 0, a: (2 / 24), children: [
-          { v: 1, a: -(2 / 24) },
-          { v: 1, a: -(1 / 24) },  // This triangle makes overlapping lines
+        { v: 0, a: A1, children: [
+          { v: 1, a: -A1 },
+          { v: 1, a: -A0 },  // This triangle makes overlapping lines
         ]},
-        { v: 1, a: (1 / 24) },
-        { v: 1, a: (2 / 24) },
+        { v: 1, a: A0 },
+        { v: 1, a: A1 },
       ]};
       const { d, a } = getDistanceAngle(
-        [ 0, 1 / 24, 2 / 24 ]
+        [ 0, A0, A1 ]
       );
       drawShape({ rootTriangleNode, d, a, count: 3 });
     };
