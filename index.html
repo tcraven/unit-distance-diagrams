@@ -10,10 +10,13 @@
       flex-direction: column;
       align-items: center;
     }
+    body, select {
+      font-family: monospace;
+    }
     #controls {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 10px;
       margin-bottom: 15px;
     }
@@ -25,10 +28,33 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body
-  x-data="{ sliderValue: 1, stats: { pointCount: 0, lineCount: 0 } }"
-  x-effect="stats = drawShape1(sliderValue)"
+  x-data="
+    {
+      shape: 'shape1',
+      sliderValue: 1,
+      stats: { pointCount: 0, lineCount: 0 }
+    }
+  "
+  x-effect="
+    const drawShapeFunctions = {
+      'shape1': drawShape1,
+      'shape2': drawShape2,
+      'shape3': drawShape3
+    };
+    const fn = drawShapeFunctions[shape];
+    if (fn === undefined) {
+      return;
+    }
+    stats = fn(sliderValue);
+  "
 >
   <div id="controls">
+    <select x-model="shape">
+      <option value="shape1">9-18</option>
+      <option value="shape3">18-45</option>
+      <option value="shape2">27-81</option>
+    </select>
+
     <label for="deltaSlider">δ</label>
     <input
       x-model="sliderValue"
@@ -44,6 +70,7 @@
       <option value="2"></option>
     </datalist>
     <span x-text="parseFloat(sliderValue).toFixed(2)"></span>
+
     <span>
       <span>
         Point count: <span x-text="stats.pointCount"></span>
@@ -237,7 +264,8 @@
 
     // Draw the 27-81 shape
     const drawShape2 = (delta) => {
-      const dd = delta - 1;
+      let dd = delta - 1;
+      dd = (dd > 0) ? dd * (1 / 2) : dd;
       const A0 = (1 + dd) / 24;
       const A1 = (2 - dd) / 24;
       const rootTriangleNode = { children: [
